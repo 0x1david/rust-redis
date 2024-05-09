@@ -1,0 +1,9 @@
+*1\r\n\r\nPING\r\n
+*3\r\n\r\nSET\r\n\r\nkey\r\n\r\nvalue\r\n
+*2\r\n\r\nGET\r\n\r\nkey\r\n
+*2\r\n\r\nHGETALL\r\n\r\nhashkey\r\n
+*3\r\n\r\nLPUSH\r\n\r\nmylist\r\n\r\nvalue1\r\n
+*3\r\n\r\nRPUSH\r\n\r\nmylist\r\n\r\nvalue2\r\n
+*4\r\n\r\nLRANGE\r\n\r\nmylist\r\n\r\n0\r\n\r\n-1\r\n*2\r\n\r\nINCR\r\n\r\ncounter\r\n
+*4\r\n\r\nZADD\r\n\r\nmyzset\r\n\r\n1\r\n\r\nmember1\r\n
+*3\r\n\r\nZSCORE\r\n\r\nmyzset\r\n\r\nmember1\r\n
