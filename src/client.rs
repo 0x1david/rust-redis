@@ -12,6 +12,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt, ReadHalf, WriteHalf};
 use tokio::net::TcpStream;
 use tokio::sync::{Mutex, RwLock};
 
+static DEFAULT_ID: [u8;88] = hex!("524544495330303131fa0972656469732d76657205372e322e30fa0a72656469732d62697473c040fa056374696d65c26d08bc65fa08757365642d6d656dc2b0c41000fa08616f662d62617365c000fff06e3bfec0ff5aa2");
+
 #[derive(Clone)]
 pub(crate) struct RedisClient {
     store: Arc<RwLock<KeyValueStore>>,
@@ -30,7 +32,7 @@ impl RedisClient {
                 store: Arc::new(RwLock::new(KeyValueStore::new())),
                 role: ClientRole::Slave {
                     master_stream_w: Arc::new(Mutex::new(w)),
-                    master_stream_r: Arc::new(r),
+                    master_stream_r: Arc::new(Mutex::new(r)),
                     master_id: "?".to_string(),
                     master_address: address,
                     master_offset: -1,
@@ -50,6 +52,7 @@ impl RedisClient {
         contents: Value,
         stream: ClientWrite,
         addr: &SocketAddr,
+        reply: bool
     ) -> Result<()> {
         debug!("[PROCESS_COMMAND] - START");
         let response = match command {
@@ -96,7 +99,7 @@ impl RedisClient {
                         );
                         debug!("[PROCESS_COMMAND] - Processing 'Set' as Master.");
                         let payload =
-                            Payload::build_bulk_string_array(vec!["SET", &key, &value.as_inner()])
+                            Payload::build_bulk_string_array(vec!["SET", &key, value.as_inner()])
                                 .redis_encode();
                         debug!("[PROCESS_COMMAND] - Encoded payload: {:?}.", payload);
 
@@ -192,7 +195,9 @@ impl RedisClient {
         };
 
         debug!("[PROCESS_COMMAND] - Writing response to stream.");
-        stream.lock().await.write_all(response.as_bytes()).await?;
+        if reply {
+            stream.lock().await.write_all(response.as_bytes()).await?;
+        }
         debug!("[PROCESS_COMMAND] - END.");
 
         Ok(())
@@ -323,7 +328,7 @@ pub enum ClientRole {
     },
     Slave {
         master_stream_w: ClientWrite,
-        master_stream_r: Arc<ReadHalf<TcpStream>>,
+        master_stream_r: Arc<Mutex<ReadHalf<TcpStream>>>,
         master_address: String,
         master_id: String,
         master_offset: i32,
@@ -334,7 +339,7 @@ impl ClientRole {
     pub fn new_master() -> Self {
         Self::Master {
             slave_connections: Arc::new(Mutex::new(HashMap::new())),
-            replication_id: "524544495330303131fa0972656469732d76657205372e322e30fa0a72656469732d62697473c040fa056374696d65c26d08bc65fa08757365642d6d656dc2b0c41000fa08616f662d62617365c000fff06e3bfec0ff5aa2".to_string(),
+            replication_id: String::from_utf8_lossy(&DEFAULT_ID).to_string(),
             replication_offset: 0,
         }
     }
@@ -360,7 +365,7 @@ impl ClientRole {
 }
 
 fn get_empty_rdb() -> Vec<u8> {
-    let empty_rdb_data = hex!("524544495330303131fa0972656469732d76657205372e322e30fa0a72656469732d62697473c040fa056374696d65c26d08bc65fa08757365642d6d656dc2b0c41000fa08616f662d62617365c000fff06e3bfec0ff5aa2");
+    let empty_rdb_data = DEFAULT_ID;
 
     let mut arr = vec![];
     let len = empty_rdb_data.len();
