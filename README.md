@@ -1,7 +1,5 @@
 # IN PROGRESS 
 
-Redis implementation in Rus
-
 ## Miniature Redis Implementation in Rust
 
 ### Overview
