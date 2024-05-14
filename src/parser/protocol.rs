@@ -58,7 +58,7 @@ impl RedisProtocolParser {
             if val.is_command() {
                 if !current_group.is_empty() {
                     result.push(Payload::Array(current_group));
-                    current_group = Vec::new(); // Start a new group
+                    current_group = Vec::new();
                 }
                 current_group.push(val.clone());
             } else {
